@@ -14,15 +14,20 @@ const {
   DB_PORT = 5432
 } = process.env
 
+// Enable SSL if connecting to RDS or if DB_SSL=true
+const isRdsHost = (DB_HOST || '').includes('.rds.amazonaws.com')
+const useSSL = process.env.DB_SSL === 'true' || isRdsHost
+
 const pool = new Pool({
   host: DB_HOST,
   user: DB_USER,
   password: DB_PASS,
   database: DB_NAME,
-  port: DB_PORT
+  port: DB_PORT,
+  ...(useSSL ? { ssl: { rejectUnauthorized: false } } : {})
 })
 
-;(async ()=>{
+;(async () => {
   try {
     const c = await pool.connect()
     await c.query(`CREATE TABLE IF NOT EXISTS questions (
@@ -43,53 +48,64 @@ const pool = new Pool({
   }
 })()
 
-app.get('/api/health', (req,res)=>res.json({ok:true}))
+app.get('/api/health', (req, res) => res.json({ ok: true }))
 
-app.get('/api/questions', async (req,res)=>{
+app.get('/api/questions', async (req, res) => {
   try {
     const r = await pool.query('SELECT * FROM questions ORDER BY created_at DESC LIMIT 200')
     res.json(r.rows)
   } catch (err) {
     console.error(err)
-    res.status(500).json({error:'db error'})
+    res.status(500).json({ error: 'db error' })
   }
 })
 
-app.post('/api/questions', async (req,res)=>{
+app.post('/api/questions', async (req, res) => {
   const { question } = req.body || {}
-  if(!question || !question.toString().trim()) return res.status(400).json({error:'question required'})
+  if (!question || !question.toString().trim()) {
+    return res.status(400).json({ error: 'question required' })
+  }
   try {
-    const r = await pool.query('INSERT INTO questions(question_text) VALUES($1) RETURNING *',[question.toString()])
+    const r = await pool.query(
+      'INSERT INTO questions(question_text) VALUES($1) RETURNING *',
+      [question.toString()]
+    )
     res.status(201).json(r.rows[0])
   } catch (err) {
     console.error(err)
-    res.status(500).json({error:'db error'})
+    res.status(500).json({ error: 'db error' })
   }
 })
 
-app.post('/api/answers/:questionId', async (req,res)=>{
+app.post('/api/answers/:questionId', async (req, res) => {
   const { answer } = req.body || {}
   const qId = req.params.questionId
-  if(!answer) return res.status(400).json({error:'answer required'})
+  if (!answer) return res.status(400).json({ error: 'answer required' })
   try {
-    const r = await pool.query('INSERT INTO answers(question_id,answer_text) VALUES($1,$2) RETURNING *',[qId,answer])
+    const r = await pool.query(
+      'INSERT INTO answers(question_id,answer_text) VALUES($1,$2) RETURNING *',
+      [qId, answer]
+    )
     res.status(201).json(r.rows[0])
   } catch (err) {
     console.error(err)
-    res.status(500).json({error:'db error'})
+    res.status(500).json({ error: 'db error' })
   }
 })
 
-app.get('/api/answers/:questionId', async (req,res)=>{
+app.get('/api/answers/:questionId', async (req, res) => {
   const qId = req.params.questionId
   try {
-    const r = await pool.query('SELECT * FROM answers WHERE question_id=$1 ORDER BY created_at DESC',[qId])
+    const r = await pool.query(
+      'SELECT * FROM answers WHERE question_id=$1 ORDER BY created_at DESC',
+      [qId]
+    )
     res.json(r.rows)
   } catch (err) {
     console.error(err)
-    res.status(500).json({error:'db error'})
+    res.status(500).json({ error: 'db error' })
   }
 })
 
 const PORT = process.env.PORT || 4000
-app.listen(PORT, ()=>console.log('marvel-backend running on',PORT))
+app.listen(PORT, () => console.log('marvel-backend running on', PORT))
