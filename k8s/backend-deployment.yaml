@@ -1,0 +1,48 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: marvel-backend
+spec:
+  replicas: 1
+  selector:
+    matchLabels: { app: marvel-backend }
+  template:
+    metadata:
+      labels: { app: marvel-backend }
+    spec:
+      containers:
+        - name: backend
+          image: <REPLACE_WITH_ECR>/marvel-backend:latest
+          ports: [{ containerPort: 4000 }]
+          env:
+            - name: DB_HOST
+              valueFrom:
+                secretKeyRef:
+                  name: marvel-secrets
+                  key: DB_HOST
+            - name: DB_USER
+              valueFrom:
+                secretKeyRef:
+                  name: marvel-secrets
+                  key: DB_USER
+            - name: DB_PASS
+              valueFrom:
+                secretKeyRef:
+                  name: marvel-secrets
+                  key: DB_PASS
+            - name: DB_NAME
+              valueFrom:
+                secretKeyRef:
+                  name: marvel-secrets
+                  key: DB_NAME
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: marvel-backend
+spec:
+  selector: { app: marvel-backend }
+  ports:
+    - port: 4000
+      targetPort: 4000
+  type: ClusterIP

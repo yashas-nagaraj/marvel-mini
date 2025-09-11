@@ -1,0 +1,27 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: marvel-frontend
+spec:
+  replicas: 1
+  selector:
+    matchLabels: { app: marvel-frontend }
+  template:
+    metadata:
+      labels: { app: marvel-frontend }
+    spec:
+      containers:
+        - name: frontend
+          image: <REPLACE_WITH_ECR>/marvel-frontend:latest
+          ports: [{ containerPort: 80 }]
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: marvel-frontend
+spec:
+  selector: { app: marvel-frontend }
+  ports:
+    - port: 80
+      targetPort: 80
+  type: ClusterIP
