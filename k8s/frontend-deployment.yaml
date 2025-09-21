@@ -12,7 +12,7 @@ spec:
     spec:
       containers:
         - name: frontend
-          image: 637423431507.dkr.ecr.ap-south-1.amazonaws.com/marvel-frontend/marvel-frontend:latest
+          image: 637423431507.dkr.ecr.ap-south-1.amazonaws.com/marvel-frontend:latest
           ports: [{ containerPort: 80 }]
 ---
 apiVersion: v1
