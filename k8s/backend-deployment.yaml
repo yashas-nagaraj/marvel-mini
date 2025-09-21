@@ -12,7 +12,7 @@ spec:
     spec:
       containers:
         - name: backend
-          image: 637423431507.dkr.ecr.ap-south-1.amazonaws.com/marvel-backend/marvel-backend:latest
+          image: 637423431507.dkr.ecr.ap-south-1.amazonaws.com/marvel-backend:latest
           ports: [{ containerPort: 4000 }]
           env:
             - name: DB_HOST
